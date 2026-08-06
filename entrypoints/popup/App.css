@@ -1,235 +1,379 @@
-.popup-shell {
+:root {
+  color-scheme: dark;
+  font-family:
+    "Inter",
+    "Aptos",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0f0f0f;
+}
+
+.player-shell,
+.launcher-shell {
   display: grid;
   gap: 16px;
-  width: 340px;
-  padding: 18px;
-  color: #182321;
-  background: #f7f3ea;
+  width: 360px;
+  padding: 16px;
+  color: #f5f5f5;
+  background: #0f0f0f;
 }
 
-.popup-header {
+.player-header,
+.launcher-header {
   display: grid;
   gap: 2px;
+  padding-bottom: 2px;
 }
 
-.popup-header h1,
+.player-header h1,
+.launcher-header h1,
 .page-status h2,
-.article-status h2 {
+.article-status h2,
+.resume-panel h2,
+.section-title {
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
-.popup-header h1 {
-  font-size: 1.8rem;
+.player-header h1,
+.launcher-header h1 {
+  font-size: 1.38rem;
+  font-weight: 750;
+}
+
+.launcher-copy,
+.launcher-error,
+.control-help,
+.panel-note {
+  margin: 0;
+  color: #c7c7c7;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.launcher-error {
+  color: #fecaca;
+}
+
+.section-title {
+  font-size: 0.86rem;
+  font-weight: 750;
 }
 
 .eyebrow {
   margin: 0;
-  color: #5b675f;
-  font-size: 0.78rem;
-  font-weight: 700;
+  color: #a3a3a3;
+  font-size: 0.72rem;
+  font-weight: 750;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
+.page-status,
+.article-status,
+.resume-panel,
+.playback-status,
+.control-group,
+.navigation-panel,
+.upcoming-panel,
+.settings-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #303030;
+  border-radius: 8px;
+  background: #181818;
+}
+
 .page-status {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid #d8d0c1;
-  border-radius: 8px;
-  background: #fffdf8;
+  gap: 6px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: #1f1f1f;
 }
 
-.article-status {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid #c7d4ca;
-  border-radius: 8px;
-  background: #f9fcf8;
-}
-
-.article-status--warning {
-  border-color: #c59b45;
-}
-
-.article-status--error {
-  border-color: #be5d56;
-}
-
+.page-status h2,
 .article-status h2,
+.resume-panel h2 {
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.page-status p,
 .article-status p,
-.article-status dl,
-.article-status dd {
+.resume-panel p,
+.playback-status span,
+.control-help,
+.panel-note {
   margin: 0;
-}
-
-.article-status h2 {
-  overflow-wrap: anywhere;
-  font-size: 1rem;
-}
-
-.article-status p {
-  color: #4b5650;
-}
-
-.article-author {
+  color: #c7c7c7;
   font-size: 0.85rem;
-}
-
-.article-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.article-metrics div {
-  display: grid;
-  gap: 2px;
-}
-
-.article-metrics dt {
-  color: #66736c;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.article-metrics dd {
-  color: #26332e;
-  font-weight: 700;
-}
-
-.page-status--warning {
-  border-color: #c59b45;
-}
-
-.page-status--error {
-  border-color: #be5d56;
-}
-
-.page-status h2 {
-  font-size: 1rem;
-  overflow-wrap: anywhere;
-}
-
-.page-status p {
-  margin: 0;
-  color: #4b5650;
+  line-height: 1.45;
 }
 
 .page-hostname {
   overflow-wrap: anywhere;
-  font-size: 0.85rem;
 }
 
 .selection-status {
   font-weight: 700;
 }
 
-.playback-status {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border-left: 3px solid #52796f;
-  color: #38443f;
-  background: #edf2ed;
+.article-status--loading {
+  border-color: #525252;
 }
 
+.page-status--warning,
+.article-status--warning,
+.resume-panel--warning {
+  border-color: #a16207;
+  background: #2a2113;
+}
+
+.page-status--error,
+.article-status--error,
 .playback-status--error {
-  border-color: #be5d56;
-  background: #fff4f1;
+  border-color: #ef4444;
+  background: #2a1717;
 }
 
-.playback-status span {
-  font-size: 0.85rem;
+.article-status dl,
+.article-status dd,
+.resume-panel dl,
+.resume-panel dd,
+.playback-status dl,
+.playback-status dd {
+  margin: 0;
 }
 
-.playback-status progress {
-  width: 100%;
-  accent-color: #52796f;
+.article-author {
+  color: #a3a3a3;
 }
 
+.article-metrics,
+.resume-metrics,
 .playback-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin: 4px 0 0;
 }
 
+.article-metrics div,
+.resume-metrics div,
 .playback-metrics div {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
+.article-metrics dt,
+.resume-metrics dt,
 .playback-metrics dt {
-  color: #66736c;
-  font-size: 0.72rem;
-  font-weight: 700;
+  color: #a3a3a3;
+  font-size: 0.7rem;
+  font-weight: 750;
   text-transform: uppercase;
 }
 
+.article-metrics dd,
+.resume-metrics dd,
 .playback-metrics dd {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
+  color: #f5f5f5;
+  font-size: 0.86rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
-.control-group,
-.settings-panel {
+.resume-warning {
+  color: #facc15;
+}
+
+.control-help,
+.panel-note {
+  color: #a3a3a3;
+}
+
+.resume-actions,
+.transport-controls,
+.paragraph-controls {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
-.listen-button {
-  width: 100%;
+.resume-actions,
+.paragraph-controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .transport-controls {
-  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
 }
 
-.paragraph-controls {
+.playback-status {
+  border-left: 4px solid #6ee7b7;
+  background: #14211c;
+}
+
+.playback-status strong {
+  color: #f5f5f5;
+  font-size: 0.92rem;
+}
+
+.upcoming-panel p,
+.upcoming-panel ol {
+  margin: 0;
+}
+
+.upcoming-panel ol {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  padding-left: 20px;
+  color: #c7c7c7;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.upcoming-panel li {
+  overflow-wrap: anywhere;
+}
+
+.playback-status progress {
+  width: 100%;
+  height: 8px;
+  accent-color: #6ee7b7;
+}
+
+.settings-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-panel .section-title,
+.settings-panel .field:nth-of-type(3),
+.settings-panel > button {
+  grid-column: 1 / -1;
 }
 
 .field {
   display: grid;
   gap: 6px;
-  color: #38443f;
-  font-size: 0.85rem;
+  min-width: 0;
+  color: #f5f5f5;
+  font-size: 0.82rem;
   font-weight: 700;
+}
+
+.field-note {
+  color: #facc15;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 button,
 select {
-  min-height: 38px;
-  border: 1px solid #b9c0b7;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #3f3f3f;
   border-radius: 8px;
   font: inherit;
 }
 
 button {
-  color: #f8faf7;
-  background: #28443b;
+  padding: 0 12px;
+  color: #0f0f0f;
+  font-weight: 750;
+  background: #f5f5f5;
+}
+
+.secondary-button {
+  color: #f5f5f5;
+  background: #242424;
+}
+
+.listen-button {
+  min-height: 48px;
+  font-size: 1rem;
 }
 
 select {
-  width: 100%;
   padding: 0 10px;
-  color: #22302b;
-  background: #fffdf8;
+  color: #f5f5f5;
+  background: #111111;
+}
+
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid #6ee7b7;
+  outline-offset: 2px;
 }
 
 button:disabled,
 select:disabled {
-  color: #74807a;
+  color: #737373;
   cursor: not-allowed;
-  background: #e6e2d9;
-  border-color: #d1cabd;
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .page-status,
+  .article-status,
+  .resume-panel,
+  .playback-status,
+  .control-group,
+  .navigation-panel,
+  .upcoming-panel,
+  .settings-panel {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  button,
+  select {
+    border-color: ButtonText;
+  }
+
+  button {
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  button:disabled,
+  select:disabled {
+    color: GrayText;
+    border-color: GrayText;
+  }
+
+  button:focus-visible,
+  select:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .playback-status {
+    border-left-color: Highlight;
+  }
 }

@@ -1,8 +1,15 @@
-import { estimateRemainingSpeechSeconds, initialPlaybackState } from "@/core";
+import {
+  estimateRemainingSpeechSeconds,
+  getSentenceIndexAtCharacter,
+  initialPlaybackState,
+  trimTextBeforeSentence,
+} from "@/core";
 import type {
   PlaybackCommand,
+  PlaybackSessionCheckpoint,
   PlaybackSource,
   PlaybackState,
+  SpeechPitch,
   SpeechChunk,
   SpeechSpeed,
 } from "@/types";
@@ -28,41 +35,100 @@ export class SpeechController {
   start(
     chunks: readonly SpeechChunk[],
     speed: SpeechSpeed,
+    pitch: SpeechPitch,
     source: PlaybackSource,
     articleId?: string,
+    startParagraphIndex = 0,
+    startSentenceIndex = 0,
+    selectedVoiceId?: string,
   ): PlaybackState {
     if (!isSpeechSynthesisAvailable()) {
       return this.setError(
         speed,
+        pitch,
         "Speech synthesis is unavailable in this browser.",
       );
     }
 
     if (chunks.length === 0) {
-      return this.setError(speed, "There is no text to speak.");
+      return this.setError(speed, pitch, "There is no text to speak.");
     }
 
     this.cancelCurrentSession();
     this.chunks = chunks;
+    const currentParagraphIndex = Math.min(
+      chunks.length - 1,
+      Math.max(0, startParagraphIndex),
+    );
     this.accumulatedElapsedMilliseconds = 0;
     this.paragraphStartedAtElapsedMilliseconds = 0;
     this.state = {
       status: "loading",
       source,
       ...(articleId === undefined ? {} : { articleId }),
-      currentParagraphIndex: 0,
+      currentParagraphIndex,
+      currentSentenceIndex: Math.max(0, startSentenceIndex),
       paragraphCount: chunks.length,
-      completedParagraphCount: 0,
+      completedParagraphCount: currentParagraphIndex,
       speed,
+      pitch,
+      ...(selectedVoiceId === undefined ? {} : { selectedVoiceId }),
       elapsedSeconds: 0,
       estimatedRemainingSeconds: estimateRemainingSpeechSeconds(
         chunks,
-        0,
+        currentParagraphIndex,
         speed,
       ),
     };
     this.emitState();
     this.speakCurrentParagraph(this.sessionId);
+    return this.getState();
+  }
+
+  restore(checkpoint: PlaybackSessionCheckpoint): PlaybackState {
+    if (!isSpeechSynthesisAvailable()) {
+      return this.setError(
+        checkpoint.state.speed,
+        checkpoint.state.pitch,
+        "Speech synthesis is unavailable in this browser.",
+      );
+    }
+
+    this.cancelCurrentSession();
+    this.chunks = checkpoint.chunks;
+    this.accumulatedElapsedMilliseconds =
+      checkpoint.state.elapsedSeconds * 1000;
+
+    const fullRemainingMilliseconds =
+      estimateRemainingSpeechSeconds(
+        checkpoint.chunks,
+        checkpoint.state.currentParagraphIndex,
+        checkpoint.state.speed,
+      ) * 1000;
+    const spokenCurrentParagraphMilliseconds = Math.max(
+      0,
+      fullRemainingMilliseconds -
+        checkpoint.state.estimatedRemainingSeconds * 1000,
+    );
+    this.paragraphStartedAtElapsedMilliseconds = Math.max(
+      0,
+      this.accumulatedElapsedMilliseconds - spokenCurrentParagraphMilliseconds,
+    );
+
+    const shouldContinue =
+      checkpoint.state.status === "playing" ||
+      checkpoint.state.status === "loading";
+    this.state = {
+      ...checkpoint.state,
+      currentSentenceIndex: checkpoint.state.currentSentenceIndex,
+      status: shouldContinue ? "loading" : checkpoint.state.status,
+    };
+    this.emitState();
+
+    if (shouldContinue) {
+      this.speakCurrentParagraph(this.sessionId);
+    }
+
     return this.getState();
   }
 
@@ -103,6 +169,52 @@ export class SpeechController {
     }
 
     this.state = { ...this.state, speed };
+    this.emitState();
+    return this.getState();
+  }
+
+  setPitch(pitch: SpeechPitch): PlaybackState {
+    if (this.state.pitch === pitch) {
+      return this.getState();
+    }
+
+    if (this.state.status === "playing" || this.state.status === "loading") {
+      this.cancelCurrentUtterance();
+      this.paragraphStartedAtElapsedMilliseconds =
+        this.accumulatedElapsedMilliseconds;
+      this.state = { ...this.state, status: "loading", pitch };
+      this.emitState();
+      this.speakCurrentParagraph(this.sessionId);
+      return this.getState();
+    }
+
+    this.state = { ...this.state, pitch };
+    this.emitState();
+    return this.getState();
+  }
+
+  setVoice(selectedVoiceId: string | undefined): PlaybackState {
+    if (this.state.selectedVoiceId === selectedVoiceId) {
+      return this.getState();
+    }
+
+    if (this.state.status === "playing" || this.state.status === "loading") {
+      this.cancelCurrentUtterance();
+      this.paragraphStartedAtElapsedMilliseconds =
+        this.accumulatedElapsedMilliseconds;
+      this.state =
+        selectedVoiceId === undefined
+          ? { ...removeSelectedVoice(this.state), status: "loading" }
+          : { ...this.state, status: "loading", selectedVoiceId };
+      this.emitState();
+      this.speakCurrentParagraph(this.sessionId);
+      return this.getState();
+    }
+
+    this.state =
+      selectedVoiceId === undefined
+        ? removeSelectedVoice(this.state)
+        : { ...this.state, selectedVoiceId };
     this.emitState();
     return this.getState();
   }
@@ -171,6 +283,7 @@ export class SpeechController {
       ...this.state,
       status: wasPaused ? "paused" : "loading",
       currentParagraphIndex: targetIndex,
+      currentSentenceIndex: 0,
       completedParagraphCount: targetIndex,
       errorMessage: undefined,
     };
@@ -192,8 +305,18 @@ export class SpeechController {
     }
 
     try {
-      const utterance = new SpeechSynthesisUtterance(chunk.text);
+      const spokenText =
+        this.state.currentSentenceIndex > 0
+          ? trimTextBeforeSentence(chunk.text, this.state.currentSentenceIndex)
+          : chunk.text;
+      const utterance = new SpeechSynthesisUtterance(spokenText);
       utterance.rate = this.state.speed;
+      utterance.pitch = this.state.pitch;
+      const voice = findVoice(this.state.selectedVoiceId);
+
+      if (voice !== undefined) {
+        utterance.voice = voice;
+      }
       utterance.onstart = () => {
         if (sessionId !== this.sessionId || this.state.status === "paused") {
           return;
@@ -225,6 +348,7 @@ export class SpeechController {
           ...this.state,
           status: "loading",
           currentParagraphIndex: nextParagraphIndex,
+          currentSentenceIndex: 0,
           completedParagraphCount: nextParagraphIndex,
         };
         this.emitState();
@@ -242,6 +366,20 @@ export class SpeechController {
           ...this.state,
           status: "error",
           errorMessage: getSpeechErrorMessage(event.error),
+        };
+        this.emitState();
+      };
+      utterance.onboundary = (event) => {
+        if (sessionId !== this.sessionId || event.name !== "sentence") {
+          return;
+        }
+
+        const sentenceOffset = this.state.currentSentenceIndex;
+        this.state = {
+          ...this.state,
+          currentSentenceIndex:
+            sentenceOffset +
+            getSentenceIndexAtCharacter(spokenText, event.charIndex),
         };
         this.emitState();
       };
@@ -266,6 +404,7 @@ export class SpeechController {
       ...this.state,
       status: "completed",
       currentParagraphIndex: Math.max(0, this.chunks.length - 1),
+      currentSentenceIndex: 0,
       completedParagraphCount: this.chunks.length,
       estimatedRemainingSeconds: 0,
     };
@@ -291,13 +430,19 @@ export class SpeechController {
     window.speechSynthesis.cancel();
   }
 
-  private setError(speed: SpeechSpeed, message: string): PlaybackState {
+  private setError(
+    speed: SpeechSpeed,
+    pitch: SpeechPitch,
+    message: string,
+  ): PlaybackState {
     this.state = {
       status: "error",
       currentParagraphIndex: 0,
+      currentSentenceIndex: 0,
       paragraphCount: 0,
       completedParagraphCount: 0,
       speed,
+      pitch,
       elapsedSeconds: 0,
       estimatedRemainingSeconds: 0,
       errorMessage: message,
@@ -398,4 +543,25 @@ function getSpeechErrorMessage(error: SpeechSynthesisErrorCode): string {
     default:
       return "Speech synthesis stopped unexpectedly. Resume to retry this paragraph.";
   }
+}
+
+function getVoiceId(voice: SpeechSynthesisVoice): string {
+  return voice.voiceURI || `${voice.name}:${voice.lang}:${voice.localService}`;
+}
+
+function findVoice(
+  voiceId: string | undefined,
+): SpeechSynthesisVoice | undefined {
+  if (voiceId === undefined || !isSpeechSynthesisAvailable()) {
+    return undefined;
+  }
+
+  return window.speechSynthesis
+    .getVoices()
+    .find((voice) => getVoiceId(voice) === voiceId);
+}
+
+function removeSelectedVoice(state: PlaybackState): PlaybackState {
+  const { selectedVoiceId: _selectedVoiceId, ...rest } = state;
+  return rest;
 }

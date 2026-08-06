@@ -10,6 +10,7 @@ export function CurrentPageDetails({ state }: CurrentPageDetailsProps) {
       <section className="page-status" aria-live="polite">
         <p className="eyebrow">Current page</p>
         <h2>Checking this page...</h2>
+        <p>SoftSpoken is confirming whether this tab can be read locally.</p>
       </section>
     );
   }
@@ -44,7 +45,7 @@ export function CurrentPageDetails({ state }: CurrentPageDetailsProps) {
 
 function formatSelectionCount(characterCount: number): string {
   const unit = characterCount === 1 ? "character" : "characters";
-  return `Selected text - ${characterCount} ${unit}`;
+  return `Selected text - ${characterCount} ${unit}. Listen will read the selection first.`;
 }
 
 interface FailurePresentation {

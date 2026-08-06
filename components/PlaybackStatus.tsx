@@ -30,10 +30,13 @@ export function PlaybackStatus({ state, actionError }: PlaybackStatusProps) {
       className={`playback-status${
         errorMessage === undefined ? "" : " playback-status--error"
       }`}
+      aria-label="Playback status"
       aria-live="polite"
     >
       <strong>{getStatusLabel(state.status, errorMessage)}</strong>
-      {errorMessage !== undefined && <span role="alert">{errorMessage}</span>}
+      {errorMessage !== undefined && (
+        <span role="alert">{getRecoveryMessage(errorMessage, state)}</span>
+      )}
 
       {state.paragraphCount > 0 && (
         <>
@@ -44,7 +47,7 @@ export function PlaybackStatus({ state, actionError }: PlaybackStatusProps) {
           <progress
             max={state.paragraphCount}
             value={state.completedParagraphCount}
-            aria-label={`Playback progress: ${progress}%`}
+            aria-label={`Playback progress, ${progress}% complete`}
           />
           <dl className="playback-metrics">
             <div>
@@ -71,6 +74,19 @@ export function PlaybackStatus({ state, actionError }: PlaybackStatusProps) {
       )}
     </section>
   );
+}
+
+function getRecoveryMessage(
+  errorMessage: string,
+  state: PlaybackState,
+): string {
+  if (state.paragraphCount > 0) {
+    return `${errorMessage} Resume will retry from the current ${
+      state.source === "article" ? "paragraph" : "part"
+    }.`;
+  }
+
+  return `${errorMessage} Select text or open a readable article, then try Listen again.`;
 }
 
 function getStatusLabel(

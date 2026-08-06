@@ -27,7 +27,7 @@ export function SpeedControl({ value, disabled, onChange }: SpeedControlProps) {
       >
         {speechSpeedOptions.map((speed) => (
           <option key={speed} value={speed}>
-            {speed}x
+            {speed}x speed
           </option>
         ))}
       </select>

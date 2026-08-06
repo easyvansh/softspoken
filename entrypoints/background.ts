@@ -10,29 +10,63 @@ import {
 import {
   isArticleExtractionResponse,
   isPlaybackResponse,
-  isSelectionTextResponse,
   isSoftSpokenMessage,
+  isSettingsResponse,
+  isVoiceListResponse,
 } from "@/messaging";
 import type {
   ArticleExtractionRequest,
   ArticleExtractionResponse,
   OffscreenSpeechRequest,
+  OffscreenVoiceRequest,
   PageInformationResponse,
+  PlaybackProgressResponse,
   PlaybackResponse,
+  SettingsResponse,
   SelectionTextRequest,
+  VoiceListResponse,
 } from "@/messaging";
 import type {
   ExtractedArticle,
   PageInformationFailureReason,
   PageSnapshot,
   PlaybackFailureReason,
+  PlaybackState,
+  UserSettings,
   SpeechSpeed,
 } from "@/types";
+import {
+  PlaybackProgressStore,
+  PlaybackSessionStore,
+  SettingsStore,
+} from "@/storage";
+import { OffscreenDocumentManager } from "./background/offscreenDocumentManager";
 
 const offscreenDocumentPath = "/offscreen.html";
-let creatingOffscreenDocument: Promise<void> | undefined;
+const offscreenDocuments = new OffscreenDocumentManager({
+  getDocumentUrl: () => browser.runtime.getURL(offscreenDocumentPath),
+  hasDocument: async (documentUrl) => {
+    const contexts = await browser.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"],
+      documentUrls: [documentUrl],
+    });
+    return contexts.length > 0;
+  },
+  createDocument: () =>
+    browser.offscreen.createDocument({
+      url: offscreenDocumentPath,
+      reasons: ["AUDIO_PLAYBACK"],
+      justification:
+        "Continue local article speech when the popup or source tab is not visible.",
+    }),
+});
+const playbackSessions = new PlaybackSessionStore(browser.storage.session);
+const playbackProgress = new PlaybackProgressStore(browser.storage.local);
+const settingsStore = new SettingsStore(browser.storage.local);
 
 export default defineBackground(() => {
+  void configureSidePanel();
+
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (!isSoftSpokenMessage(message)) {
       return false;
@@ -45,8 +79,8 @@ export default defineBackground(() => {
         return getCurrentArticle();
       case "softspoken.playback.listen-request":
         return message.source === "selection"
-          ? listenToCurrentSelection(message.speed)
-          : listenToArticle(message.article, message.speed);
+          ? listenToCurrentSelection(message.settings)
+          : listenToArticle(message.article, message.settings);
       case "softspoken.playback.command-request":
         return sendToOffscreen(
           {
@@ -57,18 +91,49 @@ export default defineBackground(() => {
           false,
         );
       case "softspoken.playback.speed-request":
-        return sendToOffscreen({
-          type: "softspoken.speech.speed",
-          target: "offscreen",
-          speed: message.speed,
-        });
+        return updateSettingsAndPlayback({ speed: message.speed });
+      case "softspoken.playback.pitch-request":
+        return updateSettingsAndPlayback({ pitch: message.pitch });
+      case "softspoken.playback.voice-request":
+        return updateSettingsAndPlayback({ voiceId: message.selectedVoiceId });
       case "softspoken.playback.state-request":
         return getPlaybackState();
+      case "softspoken.playback.progress-request":
+        return getPlaybackProgress();
+      case "softspoken.playback.resume-article-request":
+        return resumeArticle(message.article);
+      case "softspoken.settings.request":
+        return getSettings();
+      case "softspoken.settings.update-request":
+        return saveSettings(message.settings);
+      case "softspoken.voices.request":
+        return getVoices();
+      case "softspoken.voices.preview-request":
+        return previewVoice(message.settings);
+      case "softspoken.playback.checkpoint":
+        return playbackSessions
+          .updateState(message.state)
+          .then(() => persistDurableProgress(message.state))
+          .then(() => false)
+          .catch(() => false);
       default:
         return false;
     }
   });
 });
+
+async function configureSidePanel(): Promise<void> {
+  if (browser.sidePanel === undefined) {
+    return;
+  }
+
+  await browser.sidePanel
+    .setOptions({
+      path: "sidepanel.html",
+      enabled: true,
+    })
+    .catch(() => undefined);
+}
 
 async function getCurrentPageInformation(): Promise<PageInformationResponse> {
   const activeTab = await getActiveTab();
@@ -120,8 +185,10 @@ async function getCurrentArticle(): Promise<ArticleExtractionResponse> {
     };
   }
 
+  let snapshot: PageSnapshot | undefined;
+
   try {
-    await injectPageReader(activeTab.tabId);
+    snapshot = await injectPageReader(activeTab.tabId);
   } catch {
     return {
       ok: false,
@@ -132,22 +199,28 @@ async function getCurrentArticle(): Promise<ArticleExtractionResponse> {
     };
   }
 
+  if (!isPageSnapshot(snapshot)) {
+    return {
+      ok: false,
+      error: {
+        reason: "unexpected-error",
+        message: "SoftSpoken could not inspect this page before extraction.",
+      },
+    };
+  }
+
   const extractionRequest: ArticleExtractionRequest = {
     type: "softspoken.article.content-request",
     target: "content",
   };
 
-  try {
-    const response: unknown = await browser.tabs.sendMessage<
-      ArticleExtractionRequest,
-      unknown
-    >(activeTab.tabId, extractionRequest);
+  const response = await sendContentMessageWithRetry(
+    activeTab.tabId,
+    extractionRequest,
+  );
 
-    if (isArticleExtractionResponse(response)) {
-      return response;
-    }
-  } catch {
-    // Return the stable extraction error below.
+  if (isArticleExtractionResponse(response)) {
+    return response;
   }
 
   return {
@@ -160,7 +233,7 @@ async function getCurrentArticle(): Promise<ArticleExtractionResponse> {
 }
 
 async function listenToCurrentSelection(
-  speed: SpeechSpeed,
+  settings: UserSettings,
 ): Promise<PlaybackResponse> {
   const activeTab = await getActiveTab();
 
@@ -171,8 +244,10 @@ async function listenToCurrentSelection(
     );
   }
 
+  let snapshot: PageSnapshot | undefined;
+
   try {
-    await injectPageReader(activeTab.tabId);
+    snapshot = await injectPageReader(activeTab.tabId);
   } catch {
     return playbackFailure(
       "selection-unavailable",
@@ -180,33 +255,14 @@ async function listenToCurrentSelection(
     );
   }
 
-  const selectionRequest: SelectionTextRequest = {
-    type: "softspoken.selection.request",
-    target: "content",
-  };
-
-  let selectionResponse: unknown;
-
-  try {
-    selectionResponse = await browser.tabs.sendMessage<
-      SelectionTextRequest,
-      unknown
-    >(activeTab.tabId, selectionRequest);
-  } catch {
+  if (!isPageSnapshot(snapshot)) {
     return playbackFailure(
       "selection-unavailable",
-      "SoftSpoken could not read the selected text. Please select it again.",
+      "SoftSpoken could not read valid selected text from this page.",
     );
   }
 
-  if (!isSelectionTextResponse(selectionResponse) || !selectionResponse.ok) {
-    return playbackFailure(
-      "selection-unavailable",
-      "SoftSpoken could not read the selected text. Please select it again.",
-    );
-  }
-
-  const text = normalizeSpeechText(selectionResponse.text);
+  const text = normalizeSpeechText(snapshot.selectedText);
 
   if (text.length === 0) {
     return playbackFailure(
@@ -222,13 +278,55 @@ async function listenToCurrentSelection(
     target: "offscreen",
     source: "selection",
     chunks,
-    speed,
+    speed: settings.speed,
+    pitch: settings.pitch,
+    ...(settings.voiceId === undefined
+      ? {}
+      : { selectedVoiceId: settings.voiceId }),
   });
 }
 
 function listenToArticle(
   article: ExtractedArticle,
-  speed: SpeechSpeed,
+  settings: UserSettings,
+): Promise<PlaybackResponse> {
+  return startArticle(article, settings, 0, 0);
+}
+
+async function resumeArticle(
+  article: ExtractedArticle,
+): Promise<PlaybackResponse> {
+  const progress = await playbackProgress.load().catch(() => undefined);
+
+  if (
+    progress === undefined ||
+    (progress.articleId !== article.id && progress.url !== article.pageUrl)
+  ) {
+    return playbackFailure(
+      "no-playback-session",
+      "SoftSpoken could not find saved progress for this page.",
+    );
+  }
+
+  return startArticle(
+    article,
+    {
+      speed: progress.speed,
+      pitch: progress.pitch,
+      ...(progress.selectedVoiceId === undefined
+        ? {}
+        : { voiceId: progress.selectedVoiceId }),
+    },
+    progress.paragraphIndex,
+    progress.sentenceIndex,
+  );
+}
+
+function startArticle(
+  article: ExtractedArticle,
+  settings: UserSettings,
+  startParagraphIndex: number,
+  startSentenceIndex: number,
 ): Promise<PlaybackResponse> {
   const chunks = createArticleSpeechChunks(article);
 
@@ -247,12 +345,27 @@ function listenToArticle(
     source: "article",
     articleId: article.id,
     chunks,
-    speed,
+    speed: settings.speed,
+    pitch: settings.pitch,
+    startParagraphIndex,
+    startSentenceIndex,
+    ...(settings.voiceId === undefined
+      ? {}
+      : { selectedVoiceId: settings.voiceId }),
+  }).then(async (response) => {
+    if (response.ok) {
+      await saveArticleProgress(article, response.state).catch(() => undefined);
+    }
+
+    return response;
   });
 }
 
 async function getPlaybackState(): Promise<PlaybackResponse> {
-  if (!(await hasOffscreenDocument())) {
+  if (
+    !(await offscreenDocuments.hasDocument()) &&
+    (await loadPlaybackCheckpoint()) === undefined
+  ) {
     return { ok: true, state: initialPlaybackState };
   }
 
@@ -265,18 +378,124 @@ async function getPlaybackState(): Promise<PlaybackResponse> {
   );
 }
 
+async function getPlaybackProgress(): Promise<PlaybackProgressResponse> {
+  try {
+    return { ok: true, progress: await playbackProgress.load() };
+  } catch {
+    return playbackFailure(
+      "messaging-failure",
+      "SoftSpoken could not read saved progress.",
+    );
+  }
+}
+
+async function getSettings(): Promise<SettingsResponse> {
+  try {
+    return { ok: true, settings: await settingsStore.load() };
+  } catch {
+    return settingsFailure(
+      "messaging-failure",
+      "SoftSpoken could not load voice settings.",
+    );
+  }
+}
+
+async function saveSettings(settings: UserSettings): Promise<SettingsResponse> {
+  try {
+    await settingsStore.save(settings);
+    return { ok: true, settings };
+  } catch {
+    return settingsFailure(
+      "messaging-failure",
+      "SoftSpoken could not save voice settings.",
+    );
+  }
+}
+
+async function updateSettingsAndPlayback(
+  partialSettings: Partial<UserSettings>,
+): Promise<PlaybackResponse> {
+  const currentSettings = await settingsStore.load().catch(() => undefined);
+  const settings = {
+    ...(currentSettings ?? { speed: 1, pitch: 1 }),
+    ...partialSettings,
+  } satisfies UserSettings;
+
+  await settingsStore.save(settings).catch(() => undefined);
+
+  if (!(await offscreenDocuments.hasDocument())) {
+    return { ok: true, state: initialPlaybackState };
+  }
+
+  if (partialSettings.speed !== undefined) {
+    return sendToOffscreen({
+      type: "softspoken.speech.speed",
+      target: "offscreen",
+      speed: settings.speed,
+    });
+  }
+
+  if (partialSettings.pitch !== undefined) {
+    return sendToOffscreen({
+      type: "softspoken.speech.pitch",
+      target: "offscreen",
+      pitch: settings.pitch,
+    });
+  }
+
+  return sendToOffscreen({
+    type: "softspoken.speech.voice",
+    target: "offscreen",
+    selectedVoiceId: settings.voiceId,
+  });
+}
+
+async function getVoices(): Promise<VoiceListResponse> {
+  const settings = await settingsStore.load().catch(() => undefined);
+  const response = await sendToOffscreenVoice({
+    type: "softspoken.speech.voices",
+    target: "offscreen",
+    preferredVoiceId: settings?.voiceId,
+  });
+
+  return isVoiceListResponse(response)
+    ? response
+    : voiceListFailure(
+        "speech-unavailable",
+        "SoftSpoken could not read available system voices.",
+      );
+}
+
+function previewVoice(settings: UserSettings): Promise<PlaybackResponse> {
+  return sendToOffscreenVoice({
+    type: "softspoken.speech.preview",
+    target: "offscreen",
+    settings,
+  }) as Promise<PlaybackResponse>;
+}
+
 async function sendToOffscreen(
   message: OffscreenSpeechRequest,
   createIfMissing = true,
 ): Promise<PlaybackResponse> {
   try {
-    if (createIfMissing) {
-      await ensureOffscreenDocument();
-    } else if (!(await hasOffscreenDocument())) {
-      return playbackFailure(
-        "no-playback-session",
-        "There is no active playback session.",
-      );
+    if (!(await offscreenDocuments.hasDocument())) {
+      if (createIfMissing) {
+        await offscreenDocuments.ensureDocument();
+      } else {
+        const restored = await restorePlaybackSession();
+
+        if (restored === undefined) {
+          return playbackFailure(
+            "no-playback-session",
+            "There is no active playback session.",
+          );
+        }
+
+        if (!restored.ok) {
+          return restored;
+        }
+      }
     }
 
     const response: unknown = await browser.runtime.sendMessage<
@@ -285,6 +504,7 @@ async function sendToOffscreen(
     >(message);
 
     if (isPlaybackResponse(response)) {
+      await persistPlaybackResponse(message, response).catch(() => undefined);
       return response;
     }
   } catch {
@@ -297,34 +517,128 @@ async function sendToOffscreen(
   );
 }
 
-async function ensureOffscreenDocument(): Promise<void> {
-  if (await hasOffscreenDocument()) {
+async function sendToOffscreenVoice(
+  message: OffscreenVoiceRequest,
+): Promise<VoiceListResponse | PlaybackResponse> {
+  try {
+    await offscreenDocuments.ensureDocument();
+    const response: unknown = await browser.runtime.sendMessage<
+      OffscreenVoiceRequest,
+      unknown
+    >(message);
+
+    if (message.type === "softspoken.speech.voices") {
+      return isVoiceListResponse(response)
+        ? response
+        : playbackFailure(
+            "speech-unavailable",
+            "SoftSpoken could not read available system voices.",
+          );
+    }
+
+    return isPlaybackResponse(response)
+      ? response
+      : playbackFailure(
+          "speech-error",
+          "SoftSpoken could not preview this voice.",
+        );
+  } catch {
+    return playbackFailure(
+      "speech-unavailable",
+      "SoftSpoken could not reach the local speech engine.",
+    );
+  }
+}
+
+async function restorePlaybackSession(): Promise<PlaybackResponse | undefined> {
+  const checkpoint = await loadPlaybackCheckpoint();
+
+  if (checkpoint === undefined) {
+    return undefined;
+  }
+
+  await offscreenDocuments.ensureDocument();
+  const response: unknown = await browser.runtime.sendMessage({
+    type: "softspoken.speech.restore",
+    target: "offscreen",
+    checkpoint,
+  } satisfies OffscreenSpeechRequest);
+
+  return isPlaybackResponse(response) ? response : undefined;
+}
+
+async function loadPlaybackCheckpoint() {
+  try {
+    return await playbackSessions.load();
+  } catch {
+    return undefined;
+  }
+}
+
+async function persistPlaybackResponse(
+  message: OffscreenSpeechRequest,
+  response: PlaybackResponse,
+): Promise<void> {
+  if (!response.ok) {
     return;
   }
 
-  if (creatingOffscreenDocument === undefined) {
-    creatingOffscreenDocument = browser.offscreen
-      .createDocument({
-        url: offscreenDocumentPath,
-        reasons: [browser.offscreen.Reason.AUDIO_PLAYBACK],
-        justification: "Read selected webpage text aloud for the user.",
-      })
-      .finally(() => {
-        creatingOffscreenDocument = undefined;
-      });
+  if (message.type === "softspoken.speech.start") {
+    await playbackSessions.save(message.chunks, response.state);
+    return;
   }
 
-  await creatingOffscreenDocument;
+  await playbackSessions.updateState(response.state);
+  await persistDurableProgress(response.state);
 }
 
-async function hasOffscreenDocument(): Promise<boolean> {
-  const documentUrl = browser.runtime.getURL(offscreenDocumentPath);
-  const contexts = await browser.runtime.getContexts({
-    contextTypes: ["OFFSCREEN_DOCUMENT"],
-    documentUrls: [documentUrl],
-  });
+async function persistDurableProgress(state: PlaybackState): Promise<void> {
+  if (state.source !== "article" || state.articleId === undefined) {
+    return;
+  }
 
-  return contexts.length > 0;
+  if (state.status === "completed") {
+    await playbackProgress.clear();
+    return;
+  }
+
+  const current = await playbackProgress.load();
+
+  if (current === undefined || current.articleId !== state.articleId) {
+    return;
+  }
+
+  await playbackProgress.save({
+    ...current,
+    paragraphIndex: state.currentParagraphIndex,
+    sentenceIndex: state.currentSentenceIndex,
+    timestamp: new Date().toISOString(),
+    speed: state.speed,
+    pitch: state.pitch,
+    ...(state.selectedVoiceId === undefined
+      ? {}
+      : { selectedVoiceId: state.selectedVoiceId }),
+  });
+}
+
+async function saveArticleProgress(
+  article: ExtractedArticle,
+  state: PlaybackState,
+): Promise<void> {
+  await playbackProgress.save({
+    version: 1,
+    articleId: article.id,
+    url: article.pageUrl,
+    title: article.title,
+    paragraphIndex: state.currentParagraphIndex,
+    sentenceIndex: state.currentSentenceIndex,
+    timestamp: new Date().toISOString(),
+    speed: state.speed,
+    pitch: state.pitch,
+    ...(state.selectedVoiceId === undefined
+      ? {}
+      : { selectedVoiceId: state.selectedVoiceId }),
+  });
 }
 
 async function injectPageReader(
@@ -336,6 +650,32 @@ async function injectPageReader(
   });
 
   return results.find((result) => result.frameId === 0)?.result;
+}
+
+async function sendContentMessageWithRetry(
+  tabId: number,
+  message: ArticleExtractionRequest | SelectionTextRequest,
+): Promise<unknown> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await browser.tabs.sendMessage<
+        ArticleExtractionRequest | SelectionTextRequest,
+        unknown
+      >(tabId, message);
+    } catch {
+      if (attempt === 1) {
+        return undefined;
+      }
+
+      try {
+        await injectPageReader(tabId);
+      } catch {
+        return undefined;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 type ActiveTabResult =
@@ -395,5 +735,19 @@ function playbackFailure(
   reason: PlaybackFailureReason,
   message: string,
 ): PlaybackResponse {
+  return { ok: false, error: { reason, message } };
+}
+
+function settingsFailure(
+  reason: PlaybackFailureReason,
+  message: string,
+): SettingsResponse {
+  return { ok: false, error: { reason, message } };
+}
+
+function voiceListFailure(
+  reason: PlaybackFailureReason,
+  message: string,
+): VoiceListResponse {
   return { ok: false, error: { reason, message } };
 }

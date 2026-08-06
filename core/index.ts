@@ -12,4 +12,9 @@ export {
 export { initialPlaybackState } from "./playbackDefaults";
 export { createPageInformation, isPageSnapshot } from "./pageInformation";
 export { isPotentiallySupportedPage } from "./pageSupport";
-export { normalizeSpeechText, splitSpeechChunks } from "./speechText";
+export {
+  getSentenceIndexAtCharacter,
+  normalizeSpeechText,
+  splitSpeechChunks,
+  trimTextBeforeSentence,
+} from "./speechText";

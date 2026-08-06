@@ -13,6 +13,9 @@ export type {
   PlaybackCommand,
   PlaybackError,
   PlaybackFailureReason,
+  PlaybackProgressLoadState,
+  PlaybackProgressRecord,
+  PlaybackSessionCheckpoint,
   PlaybackSource,
   PlaybackState,
   PlaybackStatus,
@@ -25,5 +28,16 @@ export type {
   PageInformationLoadState,
   PageSnapshot,
 } from "./pageInfo";
-export { defaultSettings, isSpeechSpeed, speechSpeedOptions } from "./settings";
-export type { SpeechSpeed, UserSettings } from "./settings";
+export {
+  defaultSettings,
+  isSpeechPitch,
+  isSpeechSpeed,
+  speechPitchOptions,
+  speechSpeedOptions,
+} from "./settings";
+export type {
+  SpeechPitch,
+  SpeechSpeed,
+  UserSettings,
+  VoiceOption,
+} from "./settings";

@@ -5,10 +5,14 @@ import type {
   PageInformationError,
   PlaybackCommand,
   PlaybackError,
+  PlaybackProgressRecord,
   PlaybackSessionCheckpoint,
   PlaybackState,
+  SpeechPitch,
   SpeechChunk,
   SpeechSpeed,
+  UserSettings,
+  VoiceOption,
 } from "@/types";
 
 export interface PageInformationRequest {
@@ -44,14 +48,14 @@ export type ArticleExtractionResponse =
 export interface ListenToSelectionRequest {
   readonly type: "softspoken.playback.listen-request";
   readonly source: "selection";
-  readonly speed: SpeechSpeed;
+  readonly settings: UserSettings;
 }
 
 export interface ListenToArticleRequest {
   readonly type: "softspoken.playback.listen-request";
   readonly source: "article";
   readonly article: ExtractedArticle;
-  readonly speed: SpeechSpeed;
+  readonly settings: UserSettings;
 }
 
 export interface PlaybackCommandRequest {
@@ -64,8 +68,68 @@ export interface PlaybackSpeedRequest {
   readonly speed: SpeechSpeed;
 }
 
+export interface PlaybackPitchRequest {
+  readonly type: "softspoken.playback.pitch-request";
+  readonly pitch: SpeechPitch;
+}
+
+export interface PlaybackVoiceRequest {
+  readonly type: "softspoken.playback.voice-request";
+  readonly selectedVoiceId?: string;
+}
+
 export interface PlaybackStateRequest {
   readonly type: "softspoken.playback.state-request";
+}
+
+export interface PlaybackProgressRequest {
+  readonly type: "softspoken.playback.progress-request";
+}
+
+export interface SettingsRequest {
+  readonly type: "softspoken.settings.request";
+}
+
+export interface SettingsUpdateRequest {
+  readonly type: "softspoken.settings.update-request";
+  readonly settings: UserSettings;
+}
+
+export type SettingsResponse =
+  | { readonly ok: true; readonly settings: UserSettings }
+  | { readonly ok: false; readonly error: PlaybackError };
+
+export interface VoiceListRequest {
+  readonly type: "softspoken.voices.request";
+}
+
+export type VoiceListResponse =
+  | {
+      readonly ok: true;
+      readonly voices: readonly VoiceOption[];
+      readonly unavailableVoiceId?: string;
+    }
+  | { readonly ok: false; readonly error: PlaybackError };
+
+export interface VoiceListChangedMessage {
+  readonly type: "softspoken.voices.changed";
+  readonly target: "popup";
+  readonly voices: readonly VoiceOption[];
+  readonly unavailableVoiceId?: string;
+}
+
+export interface VoicePreviewRequest {
+  readonly type: "softspoken.voices.preview-request";
+  readonly settings: UserSettings;
+}
+
+export type PlaybackProgressResponse =
+  | { readonly ok: true; readonly progress?: PlaybackProgressRecord }
+  | { readonly ok: false; readonly error: PlaybackError };
+
+export interface ResumeArticleRequest {
+  readonly type: "softspoken.playback.resume-article-request";
+  readonly article: ExtractedArticle;
 }
 
 interface SpeechStartRequestBase {
@@ -73,6 +137,10 @@ interface SpeechStartRequestBase {
   readonly target: "offscreen";
   readonly chunks: readonly SpeechChunk[];
   readonly speed: SpeechSpeed;
+  readonly pitch: SpeechPitch;
+  readonly startParagraphIndex?: number;
+  readonly startSentenceIndex?: number;
+  readonly selectedVoiceId?: string;
 }
 
 export type SpeechStartRequest = SpeechStartRequestBase &
@@ -93,6 +161,30 @@ export interface SpeechSpeedRequest {
   readonly speed: SpeechSpeed;
 }
 
+export interface SpeechPitchRequest {
+  readonly type: "softspoken.speech.pitch";
+  readonly target: "offscreen";
+  readonly pitch: SpeechPitch;
+}
+
+export interface SpeechVoiceRequest {
+  readonly type: "softspoken.speech.voice";
+  readonly target: "offscreen";
+  readonly selectedVoiceId?: string;
+}
+
+export interface SpeechVoicesRequest {
+  readonly type: "softspoken.speech.voices";
+  readonly target: "offscreen";
+  readonly preferredVoiceId?: string;
+}
+
+export interface SpeechPreviewRequest {
+  readonly type: "softspoken.speech.preview";
+  readonly target: "offscreen";
+  readonly settings: UserSettings;
+}
+
 export interface SpeechStateRequest {
   readonly type: "softspoken.speech.state-request";
   readonly target: "offscreen";
@@ -110,6 +202,12 @@ export interface PlaybackStateChangedMessage {
   readonly state: PlaybackState;
 }
 
+export interface PlaybackCheckpointMessage {
+  readonly type: "softspoken.playback.checkpoint";
+  readonly target: "background";
+  readonly state: PlaybackState;
+}
+
 export type PlaybackResponse =
   | { readonly ok: true; readonly state: PlaybackState }
   | { readonly ok: false; readonly error: PlaybackError };
@@ -117,16 +215,28 @@ export type PlaybackResponse =
 export type PopupPlaybackRequest =
   | ListenToSelectionRequest
   | ListenToArticleRequest
+  | ResumeArticleRequest
   | PlaybackCommandRequest
   | PlaybackSpeedRequest
-  | PlaybackStateRequest;
+  | PlaybackPitchRequest
+  | PlaybackVoiceRequest
+  | PlaybackStateRequest
+  | PlaybackProgressRequest
+  | SettingsRequest
+  | SettingsUpdateRequest
+  | VoiceListRequest
+  | VoicePreviewRequest;
 
 export type OffscreenSpeechRequest =
   | SpeechStartRequest
   | SpeechRestoreRequest
   | SpeechCommandRequest
   | SpeechSpeedRequest
+  | SpeechPitchRequest
+  | SpeechVoiceRequest
   | SpeechStateRequest;
+
+export type OffscreenVoiceRequest = SpeechVoicesRequest | SpeechPreviewRequest;
 
 export type SoftSpokenMessage =
   | PageInformationRequest
@@ -135,6 +245,9 @@ export type SoftSpokenMessage =
   | ArticleExtractionRequest
   | PopupPlaybackRequest
   | OffscreenSpeechRequest
-  | PlaybackStateChangedMessage;
+  | OffscreenVoiceRequest
+  | PlaybackCheckpointMessage
+  | PlaybackStateChangedMessage
+  | VoiceListChangedMessage;
 
 export type SoftSpokenMessageType = SoftSpokenMessage["type"];

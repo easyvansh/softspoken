@@ -1,5 +1,6 @@
 export const storageKeys = {
   playbackProgress: "softspoken.playbackProgress",
+  playbackSession: "softspoken.playbackSession",
   settings: "softspoken.settings",
 } as const;
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSpeechText, splitSpeechChunks } from "../core";
+import {
+  getSentenceIndexAtCharacter,
+  normalizeSpeechText,
+  splitSpeechChunks,
+  trimTextBeforeSentence,
+} from "../core";
 
 describe("normalizeSpeechText", () => {
   it("collapses whitespace and trims the result", () => {
@@ -10,6 +15,22 @@ describe("normalizeSpeechText", () => {
 
   it("returns an empty string for whitespace-only input", () => {
     expect(normalizeSpeechText(" \n\t ")).toBe("");
+  });
+});
+
+describe("sentence resume helpers", () => {
+  it("maps character offsets to sentence indexes", () => {
+    const text = "First sentence. Second sentence. Third sentence.";
+
+    expect(getSentenceIndexAtCharacter(text, 0)).toBe(0);
+    expect(getSentenceIndexAtCharacter(text, 16)).toBe(1);
+    expect(getSentenceIndexAtCharacter(text, 34)).toBe(2);
+  });
+
+  it("trims spoken text before the saved sentence", () => {
+    expect(trimTextBeforeSentence("First sentence. Second sentence.", 1)).toBe(
+      "Second sentence.",
+    );
   });
 });
 

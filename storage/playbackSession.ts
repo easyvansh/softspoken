@@ -1,11 +1,10 @@
-import { isPlaybackState, isSpeechChunk } from "@/messaging";
+import { isPlaybackState, isSpeechChunk } from "@/messaging/messages";
 import type {
   PlaybackSessionCheckpoint,
   PlaybackState,
   SpeechChunk,
 } from "@/types";
-
-const playbackSessionKey = "softspoken.playback-session";
+import { storageKeys } from "./keys";
 
 export interface SessionStorageArea {
   get(key: string): Promise<Record<string, unknown>>;
@@ -19,18 +18,15 @@ export class PlaybackSessionStore {
 
   async load(): Promise<PlaybackSessionCheckpoint | undefined> {
     await this.pendingWrite;
-    const stored = await this.storageArea.get(playbackSessionKey);
-    const checkpoint = stored[playbackSessionKey];
+    const stored = await this.storageArea.get(storageKeys.playbackSession);
+    const checkpoint = stored[storageKeys.playbackSession];
     return isPlaybackSessionCheckpoint(checkpoint) ? checkpoint : undefined;
   }
 
-  save(
-    chunks: readonly SpeechChunk[],
-    state: PlaybackState,
-  ): Promise<void> {
+  save(chunks: readonly SpeechChunk[], state: PlaybackState): Promise<void> {
     return this.enqueueWrite(async () => {
       await this.storageArea.set({
-        [playbackSessionKey]: {
+        [storageKeys.playbackSession]: {
           version: 1,
           chunks,
           state,
@@ -41,15 +37,15 @@ export class PlaybackSessionStore {
 
   updateState(state: PlaybackState): Promise<void> {
     return this.enqueueWrite(async () => {
-      const stored = await this.storageArea.get(playbackSessionKey);
-      const checkpoint = stored[playbackSessionKey];
+      const stored = await this.storageArea.get(storageKeys.playbackSession);
+      const checkpoint = stored[storageKeys.playbackSession];
 
       if (!isPlaybackSessionCheckpoint(checkpoint)) {
         return;
       }
 
       await this.storageArea.set({
-        [playbackSessionKey]: { ...checkpoint, state },
+        [storageKeys.playbackSession]: { ...checkpoint, state },
       });
     });
   }

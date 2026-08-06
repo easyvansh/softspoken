@@ -13,10 +13,16 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
 
   if (state.status === "loading") {
     return (
-      <section className="article-status" aria-live="polite">
-        <p className="eyebrow">Current article</p>
-        <h2>Extracting article...</h2>
-        <p>Finding the main content on this page.</p>
+      <section
+        className="article-status article-status--loading"
+        aria-live="polite"
+      >
+        <p className="eyebrow">Article</p>
+        <h2>Finding the article...</h2>
+        <p>
+          SoftSpoken is reading a local copy of this page and looking for the
+          main text.
+        </p>
       </section>
     );
   }
@@ -27,7 +33,8 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
         className="article-status article-status--warning"
         aria-live="polite"
       >
-        <h2>Unsupported page</h2>
+        <p className="eyebrow">Article</p>
+        <h2>Article unavailable</h2>
         <p>{state.message}</p>
       </section>
     );
@@ -39,8 +46,12 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
         className="article-status article-status--error"
         aria-live="polite"
       >
-        <h2>Article extraction failed</h2>
-        <p>{state.error.message}</p>
+        <p className="eyebrow">Article</p>
+        <h2>Extraction failed</h2>
+        <p>
+          {state.error.message} Select text on the page and press Listen to read
+          a selection instead.
+        </p>
       </section>
     );
   }
@@ -52,10 +63,12 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
 
   return (
     <section className="article-status" aria-live="polite">
-      <p className="eyebrow">Current article</p>
+      <p className="eyebrow">Article</p>
       <h2>{state.article.title}</h2>
       <p className="article-author">
-        By {state.article.author ?? "Unknown author"}
+        {state.article.author === undefined
+          ? "Author unavailable"
+          : `By ${state.article.author}`}
       </p>
       <dl className="article-metrics">
         <div>
