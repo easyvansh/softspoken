@@ -36,7 +36,6 @@ export function PlayerControls({
 
   return (
     <section className="control-group" aria-label="Playback controls">
-      <h2 className="section-title">Play</h2>
       <button
         type="button"
         className="listen-button"
@@ -52,27 +51,30 @@ export function PlayerControls({
       <div className="transport-controls">
         <button
           type="button"
+          className="transport-button"
           disabled={!canPause}
           aria-label="Pause playback"
           onClick={onPause}
         >
-          Pause
+          <span aria-hidden="true">&#8545;</span>
         </button>
         <button
           type="button"
+          className="transport-button transport-button--primary"
           disabled={!canResume}
           aria-label="Resume playback"
           onClick={onResume}
         >
-          Resume
+          <span aria-hidden="true">&#9654;</span>
         </button>
         <button
           type="button"
+          className="transport-button"
           disabled={!canStop}
           aria-label="Stop playback"
           onClick={onStop}
         >
-          Stop
+          <span aria-hidden="true">&#9632;</span>
         </button>
       </div>
     </section>
@@ -89,9 +91,9 @@ function getListenLabel(
 
   switch (listenContext) {
     case "selection":
-      return "Listen";
+      return "Listen to Selection";
     case "article":
-      return "Listen";
+      return "Listen to Article";
     case "loading-article":
     case "unavailable":
       return "Listen";
@@ -150,14 +152,17 @@ export function ParagraphNavigation({
       <div className="paragraph-controls">
         <button
           type="button"
+          className="paragraph-button"
           disabled={!canNavigate || state.currentParagraphIndex === 0}
           aria-label="Go to previous paragraph"
           onClick={onPreviousParagraph}
         >
-          Previous paragraph
+          <span aria-hidden="true">&#10094;</span>
+          <span>Previous</span>
         </button>
         <button
           type="button"
+          className="paragraph-button"
           disabled={
             !canNavigate ||
             state.currentParagraphIndex >= state.paragraphCount - 1
@@ -165,7 +170,8 @@ export function ParagraphNavigation({
           aria-label="Go to next paragraph"
           onClick={onNextParagraph}
         >
-          Next paragraph
+          <span>Next</span>
+          <span aria-hidden="true">&#10095;</span>
         </button>
       </div>
     </section>

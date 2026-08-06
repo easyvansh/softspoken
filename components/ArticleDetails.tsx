@@ -58,18 +58,25 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
   );
 
   return (
-    <section className="article-status" aria-live="polite">
-      <p className="eyebrow">Article</p>
-      <h2>{state.article.title}</h2>
-      <p className="article-author">
-        {state.article.author === undefined
-          ? "Author unavailable"
-          : `By ${state.article.author}`}
-      </p>
-      <p className="article-summary">
-        {state.article.paragraphCount} paragraphs | {state.article.wordCount}{" "}
-        words | {formatMinutes(listeningMinutes)} listen
-      </p>
+    <section
+      className="article-status article-status--ready"
+      aria-live="polite"
+    >
+      <span className="article-icon" aria-hidden="true" />
+      <div className="article-copy">
+        <h2>{state.article.title}</h2>
+        <p className="article-author">
+          {state.article.siteName ??
+            (state.article.author === undefined
+              ? new URL(state.article.pageUrl).hostname
+              : `By ${state.article.author}`)}
+        </p>
+        <p className="article-summary">
+          {formatMinutes(listeningMinutes)} listen | {state.article.wordCount}{" "}
+          words
+        </p>
+        <span className="status-badge">Article detected</span>
+      </div>
     </section>
   );
 }

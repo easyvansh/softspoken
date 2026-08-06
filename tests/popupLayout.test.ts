@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ArticleDetails } from "../components/ArticleDetails";
 import { ParagraphNavigation } from "../components/PlayerControls";
 import { PlaybackStatus } from "../components/PlaybackStatus";
+import { PlayerSurface } from "../components/PlayerSurface";
 import type { ExtractedArticle, PlaybackState } from "../types";
 
 const idleState: PlaybackState = {
@@ -35,6 +36,17 @@ describe("compact popup layout", () => {
     expect(baseCss).toMatch(/body\s*{[^}]*overflow:\s*hidden/s);
   });
 
+  it("keeps the SoftSpoken logo and exposes settings from the header", () => {
+    const markup = renderToStaticMarkup(createElement(PlayerSurface));
+
+    expect(markup).toContain('src="/icon/32.png"');
+    expect(markup).toContain("SoftSpoken");
+    expect(markup).toContain('aria-label="Toggle playback settings"');
+    expect(markup.indexOf("SoftSpoken")).toBeLessThan(
+      markup.indexOf("Checking page"),
+    );
+  });
+
   it("hides paragraph navigation until an article is playing", () => {
     const idleMarkup = renderNavigation(idleState);
     const selectionMarkup = renderNavigation({
@@ -52,8 +64,8 @@ describe("compact popup layout", () => {
 
     expect(idleMarkup).toBe("");
     expect(selectionMarkup).toBe("");
-    expect(articleMarkup).toContain("Previous paragraph");
-    expect(articleMarkup).toContain("Next paragraph");
+    expect(articleMarkup).toContain('aria-label="Go to previous paragraph"');
+    expect(articleMarkup).toContain('aria-label="Go to next paragraph"');
   });
 
   it("renders article and playback metadata as compact summaries", () => {
@@ -78,7 +90,8 @@ describe("compact popup layout", () => {
       }),
     );
 
-    expect(articleMarkup).toContain("10 paragraphs | 900 words | 6 min listen");
+    expect(articleMarkup).toContain("6 min listen | 900 words");
+    expect(articleMarkup).toContain("Article detected");
     expect(playbackMarkup).toContain("20% | 1:15 elapsed | 4:00 left");
   });
 });

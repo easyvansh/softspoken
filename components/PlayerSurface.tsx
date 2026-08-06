@@ -41,6 +41,7 @@ import type {
 import { useEffect, useState } from "react";
 
 export function PlayerSurface() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentPageState, setCurrentPageState] =
     useState<PageInformationLoadState>({ status: "loading" });
   const [playbackState, setPlaybackState] =
@@ -241,45 +242,29 @@ export function PlayerSurface() {
   return (
     <main className="player-shell">
       <header className="player-header">
-        <p className="eyebrow">Privacy-first reader</p>
-        <h1>SoftSpoken</h1>
+        <div className="brand">
+          <img src="/icon/32.png" alt="" width="32" height="32" />
+          <h1>SoftSpoken</h1>
+        </div>
+        <button
+          type="button"
+          className="settings-button"
+          aria-label="Toggle playback settings"
+          aria-expanded={settingsOpen}
+          aria-controls="playback-settings"
+          onClick={() => setSettingsOpen((isOpen) => !isOpen)}
+        >
+          <span aria-hidden="true">&#9881;</span>
+        </button>
       </header>
 
-      {showCurrentPage && <CurrentPageDetails state={currentPageState} />}
-
-      <ArticleDetails state={articleState} speed={settings.speed} />
-
-      {(playbackState.status === "idle" ||
-        playbackState.status === "stopped") && (
-        <ResumePrompt
-          articleState={articleState}
-          progressState={progressState}
-          onResume={handleResumeArticle}
-          onRestart={handleRestartArticle}
-        />
-      )}
-
-      <PlayerControls
-        state={playbackState}
-        canListen={canListen}
-        listenContext={listenContext}
-        onListen={handleListen}
-        onPause={() => handleCommand("pause")}
-        onResume={() => handleCommand("resume")}
-        onStop={() => handleCommand("stop")}
-      />
-
-      <PlaybackStatus state={playbackState} actionError={actionError} />
-
-      <ParagraphNavigation
-        state={playbackState}
-        onPreviousParagraph={() => handleCommand("previous-paragraph")}
-        onNextParagraph={() => handleCommand("next-paragraph")}
-      />
-
-      <details className="settings-disclosure">
-        <summary>Playback settings</summary>
-        <section className="settings-panel" aria-label="Playback settings">
+      {settingsOpen ? (
+        <section
+          id="playback-settings"
+          className="settings-panel"
+          aria-label="Playback settings"
+        >
+          <h2 className="section-title">Playback settings</h2>
           <SpeedControl
             value={settings.speed}
             disabled={playbackState.status === "loading"}
@@ -294,7 +279,41 @@ export function PlayerSurface() {
             onRefresh={handleRefreshVoices}
           />
         </section>
-      </details>
+      ) : (
+        <>
+          {showCurrentPage && <CurrentPageDetails state={currentPageState} />}
+
+          <ArticleDetails state={articleState} speed={settings.speed} />
+
+          {(playbackState.status === "idle" ||
+            playbackState.status === "stopped") && (
+            <ResumePrompt
+              articleState={articleState}
+              progressState={progressState}
+              onResume={handleResumeArticle}
+              onRestart={handleRestartArticle}
+            />
+          )}
+
+          <PlayerControls
+            state={playbackState}
+            canListen={canListen}
+            listenContext={listenContext}
+            onListen={handleListen}
+            onPause={() => handleCommand("pause")}
+            onResume={() => handleCommand("resume")}
+            onStop={() => handleCommand("stop")}
+          />
+
+          <PlaybackStatus state={playbackState} actionError={actionError} />
+
+          <ParagraphNavigation
+            state={playbackState}
+            onPreviousParagraph={() => handleCommand("previous-paragraph")}
+            onNextParagraph={() => handleCommand("next-paragraph")}
+          />
+        </>
+      )}
     </main>
   );
 }
