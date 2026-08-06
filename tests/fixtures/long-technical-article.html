@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Building a Durable Event Pipeline</title>
+    <meta name="author" content="Leila Morgan" />
+    <meta property="og:site_name" content="Systems Field Guide" />
+  </head>
+  <body>
+    <nav>Guides Reference Community</nav>
+    <article>
+      <h1>Building a Durable Event Pipeline</h1>
+      <p>
+        Event pipelines connect producers and consumers that operate at
+        different speeds and fail independently. A durable design begins with an
+        explicit delivery contract, stable event identifiers, and storage that
+        can retain data while downstream services recover from interruption.
+      </p>
+      <h2>Define the delivery contract</h2>
+      <p>
+        At most once delivery can lose events, while at least once delivery can
+        repeat them. Exactly once behavior usually emerges from idempotent
+        processing and transactional boundaries rather than from a transport
+        promise considered in isolation.
+      </p>
+      <p>
+        Consumers should record which durable effect corresponds to each event.
+        Replaying an event then becomes harmless because the consumer recognizes
+        completed work and avoids creating the same external change twice.
+      </p>
+      <h2>Apply backpressure deliberately</h2>
+      <p>
+        A queue absorbs temporary differences in throughput but cannot erase a
+        permanent capacity deficit. Operators need lag metrics, retention
+        limits, and admission controls that reveal overload before storage fills
+        and old events expire.
+      </p>
+      <p>
+        Bounded concurrency protects databases and remote APIs from sudden
+        bursts. Adaptive limits can respond to latency and error rates, but
+        conservative static limits are often easier to reason about during the
+        first release.
+      </p>
+      <h2>Plan for schema evolution</h2>
+      <p>
+        Producers and consumers rarely deploy together. Event schemas therefore
+        need compatibility rules, versioned fixtures, and defaults that allow an
+        older consumer to process messages created by a newer producer safely.
+      </p>
+      <p>
+        Removing a field is especially risky because retained events may outlive
+        the code that originally produced them. Migration plans should account
+        for the full retention window and every independent consumer deployment.
+      </p>
+      <h2>Operate the recovery path</h2>
+      <p>
+        Dead letter queues are useful only when someone can inspect, repair, and
+        replay their contents. Recovery tools should preserve original payloads,
+        record operator decisions, and prevent a repaired batch from
+        overwhelming healthy consumers.
+      </p>
+      <p>
+        Regular replay exercises expose assumptions that ordinary traffic may
+        not trigger. A pipeline is durable when the team can explain its failure
+        modes, observe them quickly, and restore correct processing without
+        improvising under pressure.
+      </p>
+    </article>
+    <div class="ad-container">INFRASTRUCTURE VENDOR ADVERTISEMENT</div>
+  </body>
+</html>

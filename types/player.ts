@@ -1,36 +1,47 @@
 import type { SpeechSpeed } from "./settings";
 
 export type PlaybackStatus =
-  "idle" | "loading" | "playing" | "paused" | "stopped" | "error";
+  "idle" | "loading" | "playing" | "paused" | "stopped" | "completed" | "error";
 
-export interface PlaybackPosition {
-  readonly articleId: string;
-  readonly paragraphId: string;
-  readonly paragraphIndex: number;
-  readonly characterOffset: number;
+export type PlaybackSource = "selection" | "article";
+
+export interface SpeechChunk {
+  readonly id: string;
+  readonly text: string;
+  readonly wordCount: number;
 }
 
 export interface PlaybackState {
   readonly status: PlaybackStatus;
+  readonly source?: PlaybackSource;
   readonly articleId?: string;
-  readonly paragraphIndex: number;
+  readonly currentParagraphIndex: number;
   readonly paragraphCount: number;
+  readonly completedParagraphCount: number;
   readonly speed: SpeechSpeed;
-  readonly voiceId?: string;
+  readonly elapsedSeconds: number;
+  readonly estimatedRemainingSeconds: number;
   readonly errorMessage?: string;
 }
 
-export interface PlaybackProgress {
-  readonly articleId: string;
-  readonly pageUrl: string;
-  readonly updatedAt: string;
-  readonly position: PlaybackPosition;
+export interface PlaybackSessionCheckpoint {
+  readonly version: 1;
+  readonly chunks: readonly SpeechChunk[];
+  readonly state: PlaybackState;
 }
 
 export type PlaybackCommand =
-  | "listen"
-  | "play"
-  | "pause"
-  | "stop"
-  | "previous-paragraph"
-  | "next-paragraph";
+  "pause" | "resume" | "stop" | "previous-paragraph" | "next-paragraph";
+
+export type PlaybackFailureReason =
+  | "empty-selection"
+  | "selection-unavailable"
+  | "no-playback-session"
+  | "speech-unavailable"
+  | "speech-error"
+  | "messaging-failure";
+
+export interface PlaybackError {
+  readonly reason: PlaybackFailureReason;
+  readonly message: string;
+}

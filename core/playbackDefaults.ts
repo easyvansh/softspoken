@@ -3,7 +3,10 @@ import { defaultSettings } from "@/types";
 
 export const initialPlaybackState: PlaybackState = {
   status: "idle",
-  paragraphIndex: 0,
+  currentParagraphIndex: 0,
   paragraphCount: 0,
+  completedParagraphCount: 0,
   speed: defaultSettings.speed,
+  elapsedSeconds: 0,
+  estimatedRemainingSeconds: 0,
 };

@@ -13,7 +13,8 @@
 }
 
 .popup-header h1,
-.page-status h2 {
+.page-status h2,
+.article-status h2 {
   margin: 0;
   line-height: 1.15;
 }
@@ -40,6 +41,66 @@
   background: #fffdf8;
 }
 
+.article-status {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #c7d4ca;
+  border-radius: 8px;
+  background: #f9fcf8;
+}
+
+.article-status--warning {
+  border-color: #c59b45;
+}
+
+.article-status--error {
+  border-color: #be5d56;
+}
+
+.article-status h2,
+.article-status p,
+.article-status dl,
+.article-status dd {
+  margin: 0;
+}
+
+.article-status h2 {
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+}
+
+.article-status p {
+  color: #4b5650;
+}
+
+.article-author {
+  font-size: 0.85rem;
+}
+
+.article-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.article-metrics div {
+  display: grid;
+  gap: 2px;
+}
+
+.article-metrics dt {
+  color: #66736c;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.article-metrics dd {
+  color: #26332e;
+  font-weight: 700;
+}
+
 .page-status--warning {
   border-color: #c59b45;
 }
@@ -50,11 +111,69 @@
 
 .page-status h2 {
   font-size: 1rem;
+  overflow-wrap: anywhere;
 }
 
 .page-status p {
   margin: 0;
   color: #4b5650;
+}
+
+.page-hostname {
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+
+.selection-status {
+  font-weight: 700;
+}
+
+.playback-status {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-left: 3px solid #52796f;
+  color: #38443f;
+  background: #edf2ed;
+}
+
+.playback-status--error {
+  border-color: #be5d56;
+  background: #fff4f1;
+}
+
+.playback-status span {
+  font-size: 0.85rem;
+}
+
+.playback-status progress {
+  width: 100%;
+  accent-color: #52796f;
+}
+
+.playback-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+.playback-metrics div {
+  display: grid;
+  gap: 2px;
+}
+
+.playback-metrics dt {
+  color: #66736c;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.playback-metrics dd {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .control-group,
@@ -70,6 +189,12 @@
 .transport-controls {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.paragraph-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 

@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Reliable TypeScript Boundaries</title>
+    <meta name="author" content="Arun Rao" />
+    <meta property="og:site_name" content="Practical Dev Notes" />
+  </head>
+  <body>
+    <header class="menu">Docs Tutorials About</header>
+    <main class="post-content">
+      <h1>Reliable TypeScript Boundaries</h1>
+      <p>
+        Static types describe assumptions inside a program, but values arriving
+        from storage, network responses, browser messages, and parsed documents
+        remain unknown until runtime code validates their actual structure.
+      </p>
+      <p>
+        A small boundary validator should reject malformed data and return a
+        narrow domain type. Keeping this work near the boundary allows the rest
+        of the application to remain direct, readable, and confidently typed.
+      </p>
+      <h2>Prefer discriminated messages</h2>
+      <p>
+        Message objects benefit from a stable type field because each context
+        can select the relevant operation before validating its payload. This
+        also makes logs and tests easier to understand when a workflow crosses
+        several extension contexts.
+      </p>
+      <p>
+        Validation should cover nested data rather than merely recognizing the
+        outer message name. Otherwise a malformed payload can pass the guard and
+        undermine exactly the safety that the domain model was intended to
+        provide.
+      </p>
+    </main>
+    <footer class="related-posts">TEN RELATED TUTORIAL LINKS</footer>
+  </body>
+</html>

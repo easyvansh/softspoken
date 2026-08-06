@@ -1,26 +1,40 @@
-export type ArticleSource = "selection" | "article";
+export type ArticleSource = "article";
+export type ArticleExtractionMethod = "readability" | "fallback";
 
 export type ExtractionFailureReason =
-  | "unsupported-page"
-  | "no-readable-content"
-  | "empty-selection"
-  | "unexpected-error";
+  "unsupported-page" | "no-readable-content" | "unexpected-error";
 
-export interface ArticleParagraph {
+interface ArticleBlockBase {
   readonly id: string;
   readonly index: number;
   readonly text: string;
 }
 
+export interface ArticleParagraph extends ArticleBlockBase {
+  readonly kind: "paragraph";
+}
+
+export interface ArticleHeading extends ArticleBlockBase {
+  readonly kind: "heading";
+  readonly level: 1 | 2 | 3 | 4 | 5 | 6;
+}
+
+export type ArticleBlock = ArticleParagraph | ArticleHeading;
+
 export interface ExtractedArticle {
   readonly id: string;
   readonly source: ArticleSource;
+  readonly extractionMethod: ArticleExtractionMethod;
   readonly title: string;
   readonly pageUrl: string;
   readonly siteName?: string;
-  readonly byline?: string;
+  readonly author?: string;
   readonly extractedAt: string;
-  readonly paragraphs: readonly ArticleParagraph[];
+  readonly blocks: readonly ArticleBlock[];
+  readonly paragraphCount: number;
+  readonly headingCount: number;
+  readonly wordCount: number;
+  readonly estimatedReadingMinutes: number;
 }
 
 export interface ArticleExtractionError {
