@@ -1,0 +1,110 @@
+.popup-shell {
+  display: grid;
+  gap: 16px;
+  width: 340px;
+  padding: 18px;
+  color: #182321;
+  background: #f7f3ea;
+}
+
+.popup-header {
+  display: grid;
+  gap: 2px;
+}
+
+.popup-header h1,
+.page-status h2 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+.popup-header h1 {
+  font-size: 1.8rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #5b675f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.page-status {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d8d0c1;
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.page-status--warning {
+  border-color: #c59b45;
+}
+
+.page-status--error {
+  border-color: #be5d56;
+}
+
+.page-status h2 {
+  font-size: 1rem;
+}
+
+.page-status p {
+  margin: 0;
+  color: #4b5650;
+}
+
+.control-group,
+.settings-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.listen-button {
+  width: 100%;
+}
+
+.transport-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: #38443f;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+button,
+select {
+  min-height: 38px;
+  border: 1px solid #b9c0b7;
+  border-radius: 8px;
+  font: inherit;
+}
+
+button {
+  color: #f8faf7;
+  background: #28443b;
+}
+
+select {
+  width: 100%;
+  padding: 0 10px;
+  color: #22302b;
+  background: #fffdf8;
+}
+
+button:disabled,
+select:disabled {
+  color: #74807a;
+  cursor: not-allowed;
+  background: #e6e2d9;
+  border-color: #d1cabd;
+}
