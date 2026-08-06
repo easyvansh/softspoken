@@ -49,27 +49,11 @@ export function PlaybackStatus({ state, actionError }: PlaybackStatusProps) {
             value={state.completedParagraphCount}
             aria-label={`Playback progress, ${progress}% complete`}
           />
-          <dl className="playback-metrics">
-            <div>
-              <dt>Progress</dt>
-              <dd>{progress}%</dd>
-            </div>
-            <div>
-              <dt>Remaining</dt>
-              <dd>
-                {remainingParagraphs}{" "}
-                {state.source === "article" ? "paragraphs" : "parts"}
-              </dd>
-            </div>
-            <div>
-              <dt>Elapsed</dt>
-              <dd>{formatDuration(state.elapsedSeconds)}</dd>
-            </div>
-            <div>
-              <dt>Time left</dt>
-              <dd>{formatDuration(state.estimatedRemainingSeconds)}</dd>
-            </div>
-          </dl>
+          <span className="playback-summary">
+            {progress}% | {formatDuration(state.elapsedSeconds)} elapsed |{" "}
+            {formatDuration(state.estimatedRemainingSeconds)} left |{" "}
+            {remainingParagraphs} remaining
+          </span>
         </>
       )}
     </section>

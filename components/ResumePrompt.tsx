@@ -40,24 +40,10 @@ export function ResumePrompt({
     <section className="resume-panel" aria-label="Saved listening position">
       <h2>Continue Listening</h2>
       <p>{progress.title}</p>
-      <dl className="resume-metrics">
-        <div>
-          <dt>Paragraph</dt>
-          <dd>{progress.paragraphIndex + 1}</dd>
-        </div>
-        <div>
-          <dt>Sentence</dt>
-          <dd>{progress.sentenceIndex + 1}</dd>
-        </div>
-        <div>
-          <dt>Speed</dt>
-          <dd>{progress.speed}x</dd>
-        </div>
-        <div>
-          <dt>Stopped</dt>
-          <dd>{formatTimestamp(progress)}</dd>
-        </div>
-      </dl>
+      <p className="resume-position">
+        Paragraph {progress.paragraphIndex + 1} | {progress.speed}x | Saved{" "}
+        {formatTimestamp(progress)}
+      </p>
       {!canResume && (
         <p className="resume-warning">
           Saved progress exists locally, but this page cannot currently be

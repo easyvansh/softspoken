@@ -17,8 +17,6 @@ export {
 } from "./messages";
 export { loadCurrentArticle } from "./articleClient";
 export { loadCurrentPageInformation } from "./pageInformationClient";
-export { openSoftSpokenSidePanel } from "./sidePanelClient";
-export type { SidePanelLaunchResult } from "./sidePanelClient";
 export {
   getPlaybackState,
   listenToArticle,

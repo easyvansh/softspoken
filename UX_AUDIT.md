@@ -2,20 +2,21 @@
 
 ## Current Design System
 
-SoftSpoken now uses a warm, minimal, native-feeling visual system inspired by
-Apple, Linear, Arc Browser, Notion, Raycast and Readwise Reader.
+SoftSpoken now uses a dark-only, minimal, native-feeling visual system with
+subtle glassmorphism inspired by modern browser and productivity surfaces.
 
-- Canvas: warm off-white.
-- Surfaces: white and soft tan.
-- Text: charcoal with muted neutral metadata.
-- Accent: restrained warm brown for primary action emphasis.
+- Canvas: near-black neutral.
+- Surfaces: translucent charcoal glass with soft borders.
+- Text: warm off-white with muted neutral metadata.
+- Accent: restrained warm neutral for primary action emphasis.
 - State colors: reserved for playback, warnings and errors.
 - Radius: 12px for controls and state panels.
 - Spacing: 4, 8, 12, 16, 24 and 32px rhythm.
 - Typography: clean system stack with `Inter` and `Aptos` first.
 
-The UI should feel like a compact listening surface, not a dashboard. Whitespace
-creates hierarchy; borders are used sparingly; nested cards are avoided.
+The UI should feel like a compact popup listening surface, not a dashboard.
+Whitespace creates hierarchy; dense secondary information is hidden; nested
+cards are avoided.
 
 ## Design Philosophy
 
@@ -35,7 +36,6 @@ Design inspiration:
 Avoid:
 
 - Bright gradients
-- Glassmorphism
 - Excessive shadows
 - Flashy animations
 - Dashboard-style layouts

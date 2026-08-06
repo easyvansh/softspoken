@@ -1,14 +1,12 @@
 import { ArticleDetails } from "@/components/ArticleDetails";
 import { CurrentPageDetails } from "@/components/CurrentPageDetails";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
-import { PitchControl } from "@/components/PitchControl";
 import {
   ParagraphNavigation,
   PlayerControls,
 } from "@/components/PlayerControls";
 import { ResumePrompt } from "@/components/ResumePrompt";
 import { SpeedControl } from "@/components/SpeedControl";
-import { UpcomingParagraphs } from "@/components/UpcomingParagraphs";
 import { VoiceSelector } from "@/components/VoiceSelector";
 import { initialPlaybackState } from "@/core";
 import {
@@ -20,13 +18,11 @@ import {
   loadPlaybackProgress,
   loadSettings,
   loadVoices,
-  previewVoice,
   resumeArticlePlayback,
   saveSettings,
   sendPlaybackCommand,
   subscribeToPlaybackState,
   subscribeToVoiceList,
-  updatePlaybackPitch,
   updatePlaybackSpeed,
   updatePlaybackVoice,
 } from "@/messaging";
@@ -38,7 +34,6 @@ import type {
   PlaybackCommand,
   PlaybackProgressLoadState,
   PlaybackState,
-  SpeechPitch,
   SpeechSpeed,
   UserSettings,
   VoiceOption,
@@ -179,13 +174,6 @@ export function PlayerSurface() {
     runPlaybackAction(updatePlaybackSpeed(speed));
   };
 
-  const handlePitchChange = (pitch: SpeechPitch) => {
-    const nextSettings = { ...settings, pitch };
-    setSettings(nextSettings);
-    void saveSettings(nextSettings);
-    runPlaybackAction(updatePlaybackPitch(pitch));
-  };
-
   const handleVoiceChange = (voiceId: string | undefined) => {
     const nextSettings =
       voiceId === undefined
@@ -219,6 +207,10 @@ export function PlayerSurface() {
         : articleState.status === "loading"
           ? "loading-article"
           : "unavailable";
+  const showCurrentPage =
+    currentPageState.status !== "ready" ||
+    currentPageState.page.hasSelectedText ||
+    articleState.status !== "ready";
 
   const handleListen = () => {
     if (
@@ -246,13 +238,6 @@ export function PlayerSurface() {
     }
   };
 
-  const handlePreviewVoice = () => {
-    runPlaybackAction(previewVoice(settings));
-  };
-
-  const canPreviewVoice =
-    playbackState.status !== "playing" && playbackState.status !== "loading";
-
   return (
     <main className="player-shell">
       <header className="player-header">
@@ -260,16 +245,19 @@ export function PlayerSurface() {
         <h1>SoftSpoken</h1>
       </header>
 
-      <CurrentPageDetails state={currentPageState} />
+      {showCurrentPage && <CurrentPageDetails state={currentPageState} />}
 
       <ArticleDetails state={articleState} speed={settings.speed} />
 
-      <ResumePrompt
-        articleState={articleState}
-        progressState={progressState}
-        onResume={handleResumeArticle}
-        onRestart={handleRestartArticle}
-      />
+      {(playbackState.status === "idle" ||
+        playbackState.status === "stopped") && (
+        <ResumePrompt
+          articleState={articleState}
+          progressState={progressState}
+          onResume={handleResumeArticle}
+          onRestart={handleRestartArticle}
+        />
+      )}
 
       <PlayerControls
         state={playbackState}
@@ -289,39 +277,24 @@ export function PlayerSurface() {
         onNextParagraph={() => handleCommand("next-paragraph")}
       />
 
-      <UpcomingParagraphs
-        articleState={articleState}
-        playbackState={playbackState}
-      />
-
-      <section className="settings-panel" aria-label="Playback settings">
-        <h2 className="section-title">Settings</h2>
-        <SpeedControl
-          value={settings.speed}
-          disabled={playbackState.status === "loading"}
-          onChange={handleSpeedChange}
-        />
-        <PitchControl
-          value={settings.pitch}
-          disabled={playbackState.status === "loading"}
-          onChange={handlePitchChange}
-        />
-        <VoiceSelector
-          value={settings.voiceId}
-          voices={voices}
-          disabled={playbackState.status === "loading"}
-          unavailableVoiceId={unavailableVoiceId}
-          onChange={handleVoiceChange}
-          onRefresh={handleRefreshVoices}
-        />
-        <button
-          type="button"
-          disabled={!canPreviewVoice}
-          onClick={handlePreviewVoice}
-        >
-          Preview
-        </button>
-      </section>
+      <details className="settings-disclosure">
+        <summary>Playback settings</summary>
+        <section className="settings-panel" aria-label="Playback settings">
+          <SpeedControl
+            value={settings.speed}
+            disabled={playbackState.status === "loading"}
+            onChange={handleSpeedChange}
+          />
+          <VoiceSelector
+            value={settings.voiceId}
+            voices={voices}
+            disabled={playbackState.status === "loading"}
+            unavailableVoiceId={unavailableVoiceId}
+            onChange={handleVoiceChange}
+            onRefresh={handleRefreshVoices}
+          />
+        </section>
+      </details>
     </main>
   );
 }

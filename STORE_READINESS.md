@@ -6,8 +6,7 @@
   SoftSpoken.
 - `scripting`: injects the runtime page reader only into the active tab.
 - `storage`: stores local voice settings and the latest local playback progress.
-- `offscreen`: owns local speech playback after popup or side panel closes.
-- `sidePanel`: hosts the full SoftSpoken player.
+- `offscreen`: owns local speech playback after the popup closes.
 
 SoftSpoken does not request host permissions and does not send page content to
 external services.
@@ -21,8 +20,8 @@ browser's local speech engine, and progress is saved locally on your device.
 ## Required Store Assets
 
 - Extension icon set: present in `public/icon`.
-- Screenshots: capture popup launcher, side panel article state, active
-  playback, settings and unsupported-page state.
+- Screenshots: capture popup article state, active playback, settings and
+  unsupported-page state.
 - Privacy disclosure: state that webpage content stays local and no analytics,
   accounts or external text-to-speech APIs are used.
 

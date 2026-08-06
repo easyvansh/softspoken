@@ -140,6 +140,10 @@ export function ParagraphNavigation({
     state.status !== "idle" &&
     state.status !== "stopped";
 
+  if (!canNavigate) {
+    return null;
+  }
+
   return (
     <section className="navigation-panel" aria-label="Paragraph navigation">
       <h2 className="section-title">Navigation</h2>

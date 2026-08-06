@@ -66,24 +66,10 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
           ? "Author unavailable"
           : `By ${state.article.author}`}
       </p>
-      <dl className="article-metrics">
-        <div>
-          <dt>Paragraphs</dt>
-          <dd>{state.article.paragraphCount}</dd>
-        </div>
-        <div>
-          <dt>Words</dt>
-          <dd>{state.article.wordCount}</dd>
-        </div>
-        <div>
-          <dt>Reading</dt>
-          <dd>{formatMinutes(state.article.estimatedReadingMinutes)}</dd>
-        </div>
-        <div>
-          <dt>Listening</dt>
-          <dd>{formatMinutes(listeningMinutes)}</dd>
-        </div>
-      </dl>
+      <p className="article-summary">
+        {state.article.paragraphCount} paragraphs | {state.article.wordCount}{" "}
+        words | {formatMinutes(listeningMinutes)} listen
+      </p>
     </section>
   );
 }

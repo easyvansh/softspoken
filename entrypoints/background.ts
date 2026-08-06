@@ -63,8 +63,6 @@ const playbackProgress = new PlaybackProgressStore(browser.storage.local);
 const settingsStore = new SettingsStore(browser.storage.local);
 
 export default defineBackground(() => {
-  void configureSidePanel();
-
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (!isSoftSpokenMessage(message)) {
       return false;
@@ -119,19 +117,6 @@ export default defineBackground(() => {
     }
   });
 });
-
-async function configureSidePanel(): Promise<void> {
-  if (browser.sidePanel === undefined) {
-    return;
-  }
-
-  await browser.sidePanel
-    .setOptions({
-      path: "sidepanel.html",
-      enabled: true,
-    })
-    .catch(() => undefined);
-}
 
 async function getCurrentPageInformation(): Promise<PageInformationResponse> {
   const activeTab = await getActiveTab();
