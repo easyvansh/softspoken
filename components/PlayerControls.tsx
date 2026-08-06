@@ -84,14 +84,14 @@ function getListenLabel(
   listenContext: PlayerControlsProps["listenContext"],
 ): string {
   if (isBusy) {
-    return "Starting playback...";
+    return "Starting";
   }
 
   switch (listenContext) {
     case "selection":
-      return "Listen to selection";
+      return "Listen";
     case "article":
-      return "Listen to article";
+      return "Listen";
     case "loading-article":
     case "unavailable":
       return "Listen";
@@ -104,22 +104,22 @@ function getListenHelp(
   listenContext: PlayerControlsProps["listenContext"],
 ): string {
   if (isBusy) {
-    return "Preparing local speech playback.";
+    return "Preparing playback.";
   }
 
   if (canListen && listenContext === "selection") {
-    return "Selected text is ready to read aloud.";
+    return "Reading Selection";
   }
 
   if (canListen && listenContext === "article") {
-    return "The extracted article is ready to read aloud.";
+    return "Reading Article";
   }
 
   if (listenContext === "loading-article") {
-    return "Listen will be available after article extraction finishes.";
+    return "Finding article.";
   }
 
-  return "Open a readable page or select text to enable listening.";
+  return "No Text Selected";
 }
 
 interface ParagraphNavigationProps {

@@ -24,12 +24,12 @@ export function VoiceSelector({
   };
 
   return (
-    <label className="field">
-      <span>Voice</span>
+    <div className="field voice-field">
+      <label htmlFor="softspoken-voice-select">Voice</label>
       <select
+        id="softspoken-voice-select"
         value={value ?? "system-default"}
         disabled={disabled}
-        aria-label="Speech voice"
         onChange={handleChange}
       >
         <option value="system-default">System voice</option>
@@ -49,7 +49,8 @@ export function VoiceSelector({
       </button>
       {voices.length === 0 && (
         <span className="field-note" role="status">
-          System voices are still loading. Try Refresh voices, or reload the extension if Chrome has not exposed them yet.
+          System voices are still loading. Try Refresh voices, or reload the
+          extension if Chrome has not exposed them yet.
         </span>
       )}
       {unavailableVoiceId !== undefined && (
@@ -57,6 +58,6 @@ export function VoiceSelector({
           Preferred voice is unavailable. SoftSpoken is using the system voice.
         </span>
       )}
-    </label>
+    </div>
   );
 }

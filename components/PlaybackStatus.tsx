@@ -33,7 +33,7 @@ export function PlaybackStatus({ state, actionError }: PlaybackStatusProps) {
       aria-label="Playback status"
       aria-live="polite"
     >
-      <strong>{getStatusLabel(state.status, errorMessage)}</strong>
+      <strong>{getStatusLabel(state, errorMessage)}</strong>
       {errorMessage !== undefined && (
         <span role="alert">{getRecoveryMessage(errorMessage, state)}</span>
       )}
@@ -90,18 +90,20 @@ function getRecoveryMessage(
 }
 
 function getStatusLabel(
-  status: PlaybackState["status"],
+  state: PlaybackState,
   errorMessage: string | undefined,
 ): string {
   if (errorMessage !== undefined) {
     return "Playback error";
   }
 
-  switch (status) {
+  switch (state.status) {
     case "loading":
-      return "Starting speech";
+      return "Starting";
     case "playing":
-      return "Playing";
+      return state.source === "selection"
+        ? "Reading Selection"
+        : "Reading Article";
     case "paused":
       return "Paused";
     case "completed":

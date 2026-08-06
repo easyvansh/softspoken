@@ -15,7 +15,6 @@ import {
   isVoiceListResponse,
 } from "@/messaging";
 import type {
-  ArticleExtractionRequest,
   ArticleExtractionResponse,
   OffscreenSpeechRequest,
   OffscreenVoiceRequest,
@@ -23,7 +22,6 @@ import type {
   PlaybackProgressResponse,
   PlaybackResponse,
   SettingsResponse,
-  SelectionTextRequest,
   VoiceListResponse,
 } from "@/messaging";
 import type {
@@ -209,18 +207,14 @@ async function getCurrentArticle(): Promise<ArticleExtractionResponse> {
     };
   }
 
-  const extractionRequest: ArticleExtractionRequest = {
-    type: "softspoken.article.content-request",
-    target: "content",
-  };
+  try {
+    const response = await injectArticleReader(activeTab.tabId);
 
-  const response = await sendContentMessageWithRetry(
-    activeTab.tabId,
-    extractionRequest,
-  );
-
-  if (isArticleExtractionResponse(response)) {
-    return response;
+    if (isArticleExtractionResponse(response)) {
+      return response;
+    }
+  } catch {
+    // Return the stable extraction error below.
   }
 
   return {
@@ -652,30 +646,18 @@ async function injectPageReader(
   return results.find((result) => result.frameId === 0)?.result;
 }
 
-async function sendContentMessageWithRetry(
+async function injectArticleReader(
   tabId: number,
-  message: ArticleExtractionRequest | SelectionTextRequest,
-): Promise<unknown> {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      return await browser.tabs.sendMessage<
-        ArticleExtractionRequest | SelectionTextRequest,
-        unknown
-      >(tabId, message);
-    } catch {
-      if (attempt === 1) {
-        return undefined;
-      }
+): Promise<ArticleExtractionResponse | undefined> {
+  const results = await browser.scripting.executeScript<
+    [],
+    ArticleExtractionResponse
+  >({
+    target: { tabId },
+    files: ["/content-scripts/article-reader.js"],
+  });
 
-      try {
-        await injectPageReader(tabId);
-      } catch {
-        return undefined;
-      }
-    }
-  }
-
-  return undefined;
+  return results.find((result) => result.frameId === 0)?.result;
 }
 
 type ActiveTabResult =

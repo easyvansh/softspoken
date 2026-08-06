@@ -18,11 +18,8 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
         aria-live="polite"
       >
         <p className="eyebrow">Article</p>
-        <h2>Finding the article...</h2>
-        <p>
-          SoftSpoken is reading a local copy of this page and looking for the
-          main text.
-        </p>
+        <h2>Finding article</h2>
+        <p>Preparing the main text.</p>
       </section>
     );
   }
@@ -34,7 +31,7 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
         aria-live="polite"
       >
         <p className="eyebrow">Article</p>
-        <h2>Article unavailable</h2>
+        <h2>Unsupported Page</h2>
         <p>{state.message}</p>
       </section>
     );
@@ -47,10 +44,9 @@ export function ArticleDetails({ state, speed }: ArticleDetailsProps) {
         aria-live="polite"
       >
         <p className="eyebrow">Article</p>
-        <h2>Extraction failed</h2>
+        <h2>Extraction Failed</h2>
         <p>
-          {state.error.message} Select text on the page and press Listen to read
-          a selection instead.
+          {state.error.message} Select text to listen to a specific section.
         </p>
       </section>
     );

@@ -17,7 +17,11 @@ let preferredVoiceId: string | undefined;
 browser.runtime.onMessage.addListener(
   (
     message: unknown,
-  ): PlaybackResponse | VoiceListResponse | Promise<VoiceListResponse> | false => {
+  ):
+    | PlaybackResponse
+    | VoiceListResponse
+    | Promise<VoiceListResponse>
+    | false => {
     if (
       !isSoftSpokenMessage(message) ||
       !("target" in message) ||
